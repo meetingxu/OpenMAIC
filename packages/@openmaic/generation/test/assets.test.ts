@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import { loadSnippet } from '@openmaic/generation';
@@ -73,7 +73,7 @@ describe('packaged prompt assets', () => {
       ...listFiles(join(PACKAGE_ROOT, 'templates')),
       ...listFiles(join(PACKAGE_ROOT, 'snippets')),
     ]
-      .map((file) => relative(PACKAGE_ROOT, file))
+      .map((file) => relative(PACKAGE_ROOT, file).split(sep).join('/'))
       .sort();
 
     expect(actualFiles).toEqual(expectedFiles);

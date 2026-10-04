@@ -35,6 +35,12 @@ it('pins representative system and user prompts for every scene kind', async () 
     capture('interactive', '<!DOCTYPE html><html><head></head><body></body></html>'),
     { languageDirective: 'Teach in English.' },
   );
+  expect(captured.interactive?.system).toContain(
+    'Size the canvas synchronously before the first call to `draw()`',
+  );
+  expect(captured.interactive?.system).toContain(
+    'Math.max(1, Math.floor(maxWidth / (fontSize * 0.6)))',
+  );
   await generateSceneContent(pblOutline(), capture('pbl', validPBLResponse()), {
     languageDirective: 'Reply in English.',
     targetLanguage: 'en-US',

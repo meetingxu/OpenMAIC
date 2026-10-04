@@ -201,6 +201,43 @@ function updateButton(text) {
 - Don't use fixed pixel dimensions
 - Account for control panel height on mobile
 
+#### First-Frame Initialization and Numeric Bounds (CRITICAL)
+- Size the canvas synchronously before the first call to \`draw()\`; do not call \`draw()\` while width or height is still initialized to \`0\`.
+- If the canvas container has a zero or non-finite size, skip drawing and wait for \`ResizeObserver\` or a later resize to provide a positive size.
+- Every dimension-derived divisor and loop increment MUST be finite and strictly positive. For text wrapping, use a lower bound such as \`Math.max(1, Math.floor(maxWidth / (fontSize * 0.6)))\`; never allow a zero or negative chunk size to drive a loop.
+- Do not rely on \`setTimeout(resizeCanvas, ...)\` as the only initial sizing step and then draw synchronously. Call the resize/setup function before the initial draw.
+
+Safe initialization pattern:
+\`\`\`javascript
+function draw() {
+  if (
+    !Number.isFinite(canvasWidth) ||
+    !Number.isFinite(canvasHeight) ||
+    canvasWidth <= 0 ||
+    canvasHeight <= 0
+  ) return;
+  // Render only after the canvas has a usable size.
+}
+
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  if (
+    !Number.isFinite(rect.width) ||
+    !Number.isFinite(rect.height) ||
+    rect.width <= 0 ||
+    rect.height <= 0
+  ) return;
+  canvasWidth = rect.width;
+  canvasHeight = rect.height;
+  canvas.width = canvasWidth * (window.devicePixelRatio || 1);
+  canvas.height = canvasHeight * (window.devicePixelRatio || 1);
+  draw();
+}
+
+resizeCanvas(); // Initial measurement and first render happen in order.
+new ResizeObserver(resizeCanvas).observe(canvas.parentElement);
+\`\`\`
+
 ### 6. Visual Feedback
 - Clear indication when simulation starts/pauses/ends
 - Show current state in UI (running indicator, paused icon)
@@ -313,6 +350,8 @@ const objectY = baseY - BOTTOM_MARGIN - (value / maxValue) * playableHeight;
 - [ ] Button text matches button action correctly
 - [ ] Touch targets are at least 44px
 - [ ] Canvas resizes properly on window resize
+- [ ] First draw happens only after a finite, positive canvas size is available
+- [ ] Dimension-derived loop steps are finite and at least 1
 - [ ] State machine is clear (running/paused/ended)
 - [ ] All state variables reset on resetSimulation()
 - [ ] Works on both desktop and mobile browsers

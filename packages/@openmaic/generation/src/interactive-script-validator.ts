@@ -154,3 +154,47 @@ export function findInteractiveScriptSyntaxFailure(
   }
   return null;
 }
+
+export interface InteractiveContentFailure {
+  readonly kind: 'script-syntax' | 'event-handler' | 'widget-config';
+  readonly message: string;
+}
+
+/** Check browser-executed markup without running untrusted code. */
+export function findInteractiveContentFailure(html: string): InteractiveContentFailure | null {
+  const syntax = findInteractiveScriptSyntaxFailure(html);
+  if (syntax) {
+    return { kind: 'script-syntax', message: `script #${syntax.scriptIndex}: ${syntax.message}` };
+  }
+  let failure: InteractiveContentFailure | null = null;
+  function visit(parent: DefaultTreeAdapterTypes.ParentNode): void {
+    for (const child of parent.childNodes) {
+      if (!isElement(child) || failure) continue;
+      // Inert templates are checked when instantiated, not in the initial page.
+      if (isTemplate(child)) continue;
+      const attributes = scriptAttributes(child);
+      if (child.tagName === 'script' && attributes.get('id') === 'widget-config') {
+        try {
+          const config: unknown = JSON.parse(scriptSource(child));
+          if (config === null || typeof config !== 'object' || Array.isArray(config)) {
+            failure = { kind: 'widget-config', message: 'widget-config must be a JSON object' };
+          }
+        } catch {
+          failure = { kind: 'widget-config', message: 'widget-config is not valid JSON' };
+        }
+      }
+      for (const [name, source] of attributes) {
+        if (!/^on[a-z]+$/.test(name) || !source.trim()) continue;
+        // Event attributes are FunctionBody grammar, where `return false` is legal.
+        const error = classicScriptSyntaxError(`(function(event) {\n${source}\n})`);
+        if (error) {
+          failure = { kind: 'event-handler', message: `${child.tagName} ${name}: ${error}` };
+          break;
+        }
+      }
+      visit(child);
+    }
+  }
+  visit(parse(html));
+  return failure;
+}

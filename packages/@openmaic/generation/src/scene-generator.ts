@@ -31,7 +31,7 @@ import type {
 } from './outline-types.js';
 import { DEFAULT_LANGUAGE_DIRECTIVE } from './outline-generator.js';
 import { postProcessInteractiveHtml } from './interactive-post-processor.js';
-import { findInteractiveScriptSyntaxFailure } from './interactive-script-validator.js';
+import { findInteractiveContentFailure } from './interactive-script-validator.js';
 import { parseActionsFromStructuredOutput } from './action-parser.js';
 import { parseJsonResponse } from './json-repair.js';
 import {
@@ -1326,8 +1326,15 @@ export async function generateWidgetContent(
   }
 
   log.info(`Generating ${widgetType} widget for: ${outline.title}`);
-  const response = await aiCall(prompts.system, prompts.user);
-  const html = extractHtml(response, log);
+  const reliabilityRules = `\n\n## Interaction reliability (mandatory)
+Run in a sandboxed iframe with an opaque origin: do not depend on localStorage, sessionStorage, parent DOM access, fetch, or remote imports for core interactions. Use inline vanilla JavaScript and in-memory state; optional visual libraries must have a usable fallback.
+Initialize only after the DOM exists (script at the end of body or DOMContentLoaded). Every visible enabled button, selectable node, and slider must have a working event handler and visible feedback. Use button type="button"; do not use empty href links as controls.
+Use a single initialization path and stable IDs. Avoid duplicate global const/let declarations. Keep JSON in widget-config valid JSON (no comments or trailing commas). Bind handlers to dynamically created nodes after creation or use delegation. Never let decorative overlays capture pointer events.
+For diagrams, clicking every visible node must display its own details in a readable panel; support touch and keyboard activation. Next/previous/reset controls must update the visible state and button enabled state consistently.
+Before returning, mentally walk through initial load, every enabled control, reset, and repeated clicks. All advertised interactions must be implemented. Return one complete HTML document only.`;
+  const systemPrompt = prompts.system + reliabilityRules;
+  const response = await aiCall(systemPrompt, prompts.user);
+  let html = extractHtml(response, log);
 
   if (!html) {
     log.error(`Failed to extract HTML from ${widgetType} response for: ${outline.title}`);
@@ -1335,14 +1342,23 @@ export async function generateWidgetContent(
     return null;
   }
 
-  // Reject visually valid but inert widgets whose classic inline JS cannot parse.
-  const scriptSyntaxFailure = findInteractiveScriptSyntaxFailure(html);
-  if (scriptSyntaxFailure) {
-    log.error(
-      `Generated ${widgetType} widget contains invalid inline JavaScript in script #${scriptSyntaxFailure.scriptIndex}: ${scriptSyntaxFailure.message}`,
+  // Compile only; never execute generated JavaScript on the server. Repair once
+  // using the actual validation error instead of spending retries on the same prompt.
+  const contentFailure = findInteractiveContentFailure(html);
+  if (contentFailure) {
+    log.warn(
+      `Generated ${widgetType} widget failed ${contentFailure.kind} validation; repairing once`,
     );
-    options.onFailure?.({ code: 'invalid-model-output' });
-    return null;
+    const repairResponse = await aiCall(
+      systemPrompt,
+      `${prompts.user}\n\nRepair the following generated document. Validation failed: ${contentFailure.message}\nKeep the teaching content and visual design, fix the cause and related event bindings, and return the entire corrected HTML document.\n<document_to_repair>\n${html}\n</document_to_repair>`,
+    );
+    html = extractHtml(repairResponse, log);
+    if (!html || findInteractiveContentFailure(html)) {
+      log.error(`Generated ${widgetType} widget still fails validation after repair`);
+      options.onFailure?.({ code: 'invalid-model-output' });
+      return null;
+    }
   }
 
   // Extract widget config from HTML if present

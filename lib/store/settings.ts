@@ -2083,7 +2083,10 @@ export const useSettingsStore = create<SettingsState>()(
                 : '';
 
               const validTTSVoice =
-                validTTSProvider !== state.ttsProviderId
+                validTTSProvider !== state.ttsProviderId ||
+                (data.trial?.enabled &&
+                  validTTSProvider === 'minimax-tts' &&
+                  state.ttsVoice === 'female-yujie')
                   ? DEFAULT_TTS_VOICES[validTTSProvider as BuiltInTTSProviderId] || 'default'
                   : state.ttsVoice;
               const validASRLanguage = getValidASRLanguage(
@@ -2218,8 +2221,8 @@ export const useSettingsStore = create<SettingsState>()(
                 ...(validLLMModel !== state.modelId && { modelId: validLLMModel }),
                 ...(validTTSProvider !== state.ttsProviderId && {
                   ttsProviderId: validTTSProvider as TTSProviderId,
-                  ttsVoice: validTTSVoice,
                 }),
+                ...(validTTSVoice !== state.ttsVoice && { ttsVoice: validTTSVoice }),
                 ...(validASRProvider !== state.asrProviderId && {
                   asrProviderId: validASRProvider as ASRProviderId,
                   asrLanguage: validASRLanguage,

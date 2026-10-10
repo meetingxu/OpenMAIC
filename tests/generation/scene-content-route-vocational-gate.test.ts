@@ -63,9 +63,13 @@ describe('scene-content vocational gate', { timeout: 20_000 }, () => {
 
   test('reports invalid interactive output as a retryable failure without returning raw output', async () => {
     vi.resetModules();
-    callLLMMock.mockResolvedValueOnce({
-      text: '<!DOCTYPE html><html><body><script>state counts = [];</script></body></html>',
-    });
+    callLLMMock
+      .mockResolvedValueOnce({
+        text: '<!DOCTYPE html><html><body><script>state counts = [];</script></body></html>',
+      })
+      .mockResolvedValueOnce({
+        text: '<!DOCTYPE html><html><body><script>state counts = [];</script></body></html>',
+      });
     const { POST } = await import('@/app/api/generate/scene-content/route');
     const outline = { ...createProceduralSkillOutline(), widgetType: 'simulation' as const };
     const response = await POST(mockRequest(outline));

@@ -6,6 +6,7 @@
  */
 
 import type { NextRequest } from 'next/server';
+import { isTrialMode } from '@/lib/server/trial-policy';
 import { getModel, getProvider, parseModelString, type ModelWithInfo } from '@/lib/ai/providers';
 import type { ProviderType, ThinkingConfig } from '@/lib/types/provider';
 import {
@@ -67,6 +68,11 @@ export async function resolveModel(params: {
   providerType?: string;
   thinkingConfig?: ThinkingConfig;
 }): Promise<ResolvedModel> {
+  if (isTrialMode()) {
+    // Ignore connection details, model selection and routing supplied by visitors.
+    // Operator MODEL_ROUTES still wins; every other stage uses DEFAULT_MODEL.
+    params = { stage: params.stage };
+  }
   // Resolution order: env stage route > user stage route > x-model > DEFAULT_MODEL.
   // A configured stage route is the operator's deliberate per-stage choice and
   // wins even over a client-sent x-model (otherwise the browser UI, which always

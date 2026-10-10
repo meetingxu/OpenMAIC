@@ -49,6 +49,7 @@ async function clearPersistedStore(persistApi: PersistApi, fallbackName: string)
 }
 
 export function GeneralSettings() {
+  const trialMode = useSettingsStore((state) => state.trialMode);
   const { t } = useI18n();
 
   // Clear cache state
@@ -112,7 +113,7 @@ export function GeneralSettings() {
   return (
     <div className="flex flex-col gap-8">
       {/* Usage statistics dashboard */}
-      <UsageDashboard />
+      {!trialMode && <UsageDashboard />}
 
       {/* Danger Zone - Clear Cache */}
       <div className="relative rounded-xl border border-destructive/30 bg-destructive/[0.03] dark:bg-destructive/[0.06] overflow-hidden">

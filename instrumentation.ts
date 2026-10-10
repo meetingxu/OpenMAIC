@@ -15,6 +15,17 @@ export async function register(): Promise<void> {
   // want; the persistence stack is Node-only.
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
+  const { validateTrialEnvironment, isTrialMode } = await import('@/lib/server/trial-policy');
+  validateTrialEnvironment();
+  if (isTrialMode()) {
+    const { parseModelString } = await import('@/lib/ai/providers');
+    const { isServerConfiguredProvider } = await import('@/lib/server/provider-config');
+    const { providerId } = parseModelString(process.env.DEFAULT_MODEL!);
+    if (!isServerConfiguredProvider('providers', providerId)) {
+      throw new Error('Trial default model must have server-managed credentials.');
+    }
+  }
+
   const { warnIfAccessCodeIsUnset } = await import('@/lib/server/access-code-warning');
   warnIfAccessCodeIsUnset(process.env.ACCESS_CODE);
 

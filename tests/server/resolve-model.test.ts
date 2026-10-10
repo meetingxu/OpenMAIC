@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+afterEach(() => vi.unstubAllEnvs());
 
 // Mock the heavy downstream of resolveModel so the test isolates the model
 // string *resolution order*: stage route > x-model > DEFAULT_MODEL > builtin.
@@ -37,6 +39,26 @@ vi.mock('@/lib/server/ssrf-guard', () => ({
 }));
 
 describe('resolveModel — per-stage resolution order', () => {
+  it('trial ignores visitor model, stage routes and connection overrides', async () => {
+    vi.stubEnv('TRIAL_MODE', 'true');
+    process.env.DEFAULT_MODEL = 'openai:gpt-4o-mini';
+    mocks.serverManaged = true;
+    const { resolveModel } = await import('@/lib/server/resolve-model');
+    const result = await resolveModel({
+      modelString: 'anthropic:expensive-model',
+      apiKey: 'visitor-key',
+      baseUrl: 'https://attacker.example',
+      providerType: 'anthropic',
+      userRoutes: { 'scene-content': { model: 'anthropic:expensive-model' } },
+      stage: 'scene-content',
+    });
+    expect(result.modelString).toBe('openai:gpt-4o-mini');
+    expect(mocks.getModelCalls[0]).toMatchObject({
+      apiKey: 'server-key',
+      baseUrl: undefined,
+      providerType: undefined,
+    });
+  });
   beforeEach(() => {
     vi.resetModules();
     mocks.getModelCalls.length = 0;

@@ -107,6 +107,20 @@ describe('provider-config', () => {
   });
 
   describe('resolveApiKey', () => {
+    it('trial rejects unmanaged credentials and URLs across modalities', async () => {
+      vi.stubEnv('TRIAL_MODE', 'true');
+      vi.stubEnv('MINIMAX_API_KEY', 'server-test-key');
+      const config = await import('@/lib/server/provider-config');
+      expect(config.resolveApiKey('minimax', 'visitor-key')).toBe('server-test-key');
+      expect(() => config.resolveApiKey('openai', 'visitor-key')).toThrow(/server-configured/);
+      expect(() => config.resolveImageApiKey('openai-image', 'visitor-key')).toThrow(
+        /server-configured/,
+      );
+      expect(() => config.resolveBaseUrl('openai', 'https://attacker.example')).toThrow(
+        /server-configured/,
+      );
+      expect(config.resolvePDFApiKey('unpdf', '')).toBe('');
+    });
     it('returns client key when provided', async () => {
       const { resolveApiKey } = await import('@/lib/server/provider-config');
       expect(resolveApiKey('openai', 'sk-client')).toBe('sk-client');

@@ -10,12 +10,17 @@ import {
 } from '@/lib/server/provider-config';
 import { apiError, apiSuccess } from '@/lib/server/api-response';
 import { createLogger } from '@/lib/logger';
+import { isTrialMode } from '@/lib/server/trial-policy';
 
 const log = createLogger('ServerProviders');
 
 export async function GET() {
   try {
     return apiSuccess({
+      trial: {
+        enabled: isTrialMode(),
+        defaultModel: isTrialMode() ? process.env.DEFAULT_MODEL : undefined,
+      },
       providers: getServerProviders(),
       tts: getServerTTSProviders(),
       asr: getServerASRProviders(),

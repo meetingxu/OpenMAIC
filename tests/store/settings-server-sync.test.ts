@@ -205,6 +205,7 @@ async function readPersistedState(): Promise<Record<string, unknown>> {
 
 /** Full server response shape */
 interface MockServerResponse {
+  trial?: { enabled: boolean; defaultModel?: string };
   providers?: Record<string, { models?: string[]; baseUrl?: string }>;
   tts?: Record<string, { baseUrl?: string; disabled?: boolean }>;
   asr?: Record<string, { baseUrl?: string; disabled?: boolean }>;
@@ -382,6 +383,19 @@ describe('fetchServerProviders — provider availability sync', () => {
   }
 
   // ---- Server model list filtering ----
+
+  it('trial selects the operator default over a saved visitor selection', async () => {
+    const store = await getStore();
+    store.setState({ providerId: 'anthropic', modelId: 'claude-sonnet-4-6' });
+    mockServerResponse({
+      trial: { enabled: true, defaultModel: 'openai:gpt-4o-mini' },
+      providers: { openai: { models: ['gpt-4o', 'gpt-4o-mini'] } },
+    });
+    await store.getState().fetchServerProviders();
+    expect(store.getState().trialMode).toBe(true);
+    expect(store.getState().providerId).toBe('openai');
+    expect(store.getState().modelId).toBe('gpt-4o-mini');
+  });
 
   it('filters models to only those the server allows', async () => {
     const store = await getStore();

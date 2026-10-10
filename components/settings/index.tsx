@@ -283,6 +283,25 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ open, onOpenChange, initialSection }: SettingsDialogProps) {
+  const trialMode = useSettingsStore((state) => state.trialMode);
+  const { t } = useI18n();
+  if (trialMode) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogTitle>{t('settings.title')}</DialogTitle>
+          <DialogDescription>{t('settings.generalSettings')}</DialogDescription>
+          <GeneralSettings />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+  return (
+    <FullSettingsDialog open={open} onOpenChange={onOpenChange} initialSection={initialSection} />
+  );
+}
+
+function FullSettingsDialog({ open, onOpenChange, initialSection }: SettingsDialogProps) {
   const { t } = useI18n();
 
   // Get settings from store

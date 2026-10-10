@@ -182,6 +182,7 @@ export function getValidASRLanguage(providerId: ASRProviderId, currentLanguage?:
 }
 
 export interface SettingsState {
+  trialMode: boolean;
   // Model selection
   providerId: ProviderId;
   modelId: string;
@@ -1086,6 +1087,7 @@ export const useSettingsStore = create<SettingsState>()(
         // the KVStore on rehydration; an upgrading user reconfigures once.
         providerId: 'openai' as ProviderId,
         modelId: '',
+        trialMode: false,
         thinkingConfigs: {},
         llmStageRoutes: {},
         webSearchEnabled: false,
@@ -1748,6 +1750,7 @@ export const useSettingsStore = create<SettingsState>()(
             // capability section carries an optional `disabled` flag for
             // admin/server-level force-off (#665).
             const data = (await res.json()) as {
+              trial?: { enabled: boolean; defaultModel?: string };
               providers: Record<string, { models?: string[] }>;
               tts: Record<string, { disabled?: boolean }>;
               asr: Record<string, { disabled?: boolean }>;
@@ -2048,9 +2051,18 @@ export const useSettingsStore = create<SettingsState>()(
               const llmModels = validLLMProvider
                 ? (newProvidersConfig[validLLMProvider as ProviderId]?.models ?? [])
                 : [];
-              const validLLMModel = validLLMProvider
+              let validLLMModel = validLLMProvider
                 ? resolveSelectedLLMModel(validLLMProvider as ProviderId, state.modelId, llmModels)
                 : '';
+              if (data.trial?.enabled && data.trial.defaultModel) {
+                const separator = data.trial.defaultModel.indexOf(':');
+                const trialProvider = data.trial.defaultModel.slice(0, separator) as ProviderId;
+                const trialModel = data.trial.defaultModel.slice(separator + 1);
+                if (separator > 0 && newProvidersConfig[trialProvider]?.isServerConfigured) {
+                  validLLMProvider = trialProvider;
+                  validLLMModel = trialModel;
+                }
+              }
               const imageModels = validImageProvider
                 ? resolveMediaModels(
                     IMAGE_PROVIDERS[validImageProvider as ImageProviderId]?.models ?? [],
@@ -2196,6 +2208,7 @@ export const useSettingsStore = create<SettingsState>()(
                   Math.floor(data.generation?.parallelSceneConcurrency ?? 0),
                 ),
                 autoConfigApplied: true,
+                trialMode: data.trial?.enabled === true,
                 // Validated selections
                 ...(validLLMProvider !== state.providerId && {
                   providerId: validLLMProvider as ProviderId,

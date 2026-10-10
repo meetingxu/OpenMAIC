@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { isAgentRuntimeConfigured, isProWorkbenchEnabled } from '@/lib/config/feature-flags';
 import { verifyAccessTokenEdge } from '@/lib/server/access-token-edge';
+import { isTrialMode, isTrialPrivateApi } from '@/lib/server/trial-policy';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,6 +19,9 @@ export async function middleware(request: NextRequest) {
   }
 
   const accessCode = process.env.ACCESS_CODE;
+  if (isTrialMode() && !accessCode) {
+    return new NextResponse('Trial deployment is not configured', { status: 503 });
+  }
   if (!accessCode) {
     return NextResponse.next();
   }
@@ -30,6 +34,12 @@ export async function middleware(request: NextRequest) {
   // Check cookie — validate HMAC signature, not just existence
   const cookie = request.cookies.get('openmaic_access');
   if (cookie?.value && (await verifyAccessTokenEdge(cookie.value, accessCode))) {
+    if (isTrialMode() && isTrialPrivateApi(pathname)) {
+      return NextResponse.json(
+        { success: false, errorCode: 'UNAUTHENTICATED', error: 'Unavailable in trial deployment' },
+        { status: 403 },
+      );
+    }
     return NextResponse.next();
   }
 

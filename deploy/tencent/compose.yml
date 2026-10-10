@@ -1,0 +1,57 @@
+name: openmaic-trial
+services:
+  app:
+    image: ${OPENMAIC_IMAGE:?Set an immutable image tag built from the product branch}
+    env_file: /opt/openmaic/secrets/trial.env
+    environment:
+      TRIAL_MODE: 'true'
+      TRUST_PROXY_HEADERS: 'true'
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: '3000'
+    expose: ['3000']
+    volumes:
+      - app-data:/app/data
+    mem_limit: 2g
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+    networks: [backend]
+  proxy:
+    image: nginx:1.28-alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    mem_limit: 128m
+    restart: unless-stopped
+    networks: [frontend, backend]
+  https:
+    image: caddy:2-alpine
+    environment:
+      TRIAL_DOMAIN: ${TRIAL_DOMAIN:?Set a domain pointing to this server}
+    ports: ['80:80', '443:443']
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [proxy]
+    mem_limit: 128m
+    restart: unless-stopped
+    networks:
+      frontend:
+        ipv4_address: 172.30.90.10
+networks:
+  backend: {}
+  frontend:
+    ipam:
+      config:
+        - subnet: 172.30.90.0/24
+volumes:
+  app-data: {}
+  caddy-data: {}
+  caddy-config: {}

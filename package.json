@@ -19,6 +19,7 @@
     "lint": "eslint",
     "check:i18n-keys": "node scripts/check-i18n-keys.mjs",
     "check:node-engine": "node scripts/check-node-engine-contract.mjs",
+    "check:secrets": "node scripts/check-public-secrets.mjs",
     "check:package-versions": "node scripts/check-package-version-bumps.mjs",
     "check": "prettier . --check",
     "format": "prettier . --write",

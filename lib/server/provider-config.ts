@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 import { createLogger } from '@/lib/logger';
+import { isTrialMode } from '@/lib/server/trial-policy';
 import {
   DEFAULT_QWEN_TTS_VOICE_CLONE_MODEL,
   isQwenCatalogVoice,
@@ -610,6 +611,9 @@ function resolveSectionApiKey(
 ): string {
   const entry = getConfig()[section][providerId];
   if (entry) return entry.apiKey || ''; // managed: server key is authoritative
+  if (isTrialMode() && !(section === 'pdf' && providerId === 'unpdf')) {
+    throw new Error('Only server-configured providers are available in trial deployment.');
+  }
   return clientKey || ''; // unmanaged: client-supplied key only
 }
 
@@ -620,6 +624,9 @@ function resolveSectionBaseUrl(
 ): string | undefined {
   const entry = getConfig()[section][providerId];
   if (entry) return entry.baseUrl; // managed: server base URL is authoritative
+  if (isTrialMode() && !(section === 'pdf' && providerId === 'unpdf')) {
+    throw new Error('Only server-configured providers are available in trial deployment.');
+  }
   return clientBaseUrl; // unmanaged: client-supplied base URL only
 }
 

@@ -1,0 +1,3 @@
+{$TRIAL_DOMAIN} {
+  reverse_proxy proxy:8080
+}

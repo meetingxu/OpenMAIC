@@ -6,13 +6,15 @@
 
 现有部署仍保留 Vercel Authentication。2026-10-10 已将试用改造同步到产品分支，Preview 部署 `3ZvPgG2emQAhnApZxbsVr4hAqMi9`（提交 `2e5a48e5`）已 Ready 并绑定本域名。Preview 已配置 `TRIAL_MODE=true`、`DEFAULT_MODEL=minimax:MiniMax-M2.7-highspeed`、对应服务端模型列表/地址、关闭场景并行；`MINIMAX_API_KEY` 和 `ACCESS_CODE` 为 Secret，由运营者本地填写。
 
-在线验证：首页自动显示默认 MiniMax 模型，访客设置页只有常规设置，已成功生成并打开简单文字课堂；未配置或验证图片、视频、TTS 等服务。Cloudflare 尚未接入。当前机器检测到虚拟 DNS/TUN 地址，现有 HTTP 测量只能记录当前网络路径，不能作为大陆无代理直连结论。验证证据保存在被 Git 忽略的 `outputs/vercel/`。
+在线验证：首页自动显示默认 MiniMax 模型，访客设置页只有常规设置，已成功生成并打开课堂。Cloudflare 尚未接入。当前机器检测到虚拟 DNS/TUN 地址，现有 HTTP 测量只能记录当前网络路径，不能作为大陆无代理直连结论。验证证据保存在被 Git 忽略的 `outputs/vercel/`。
 
 ## MiniMax Token Plan 多模态
 
 Preview 设置 `MINIMAX_TOKEN_PLAN=true` 后，服务端会复用已配置的 MiniMax 密钥，补充语音 `speech-2.8-turbo`、图片 `image-01` 和 MiniMax 联网搜索。明确配置的各能力密钥/地址/模型和禁用开关优先；不会自动启用视频或声音克隆，也不会把密钥发给访客。试用模式会让已访问过网站的浏览器重新采纳新增能力。
 
 套餐额度是否支持某一调用以实际接口结果和账户为准，文字、图片、语音共享配额。旧课件若生成时语音关闭，没有已存的音频，需要在编辑器补生成语音或重新生成课件；开启 TTS 不会自动补齐旧课件。
+
+2026-10-10 多模态 Preview `BAr5R4mvy5uT9Kjq6L9gk12o68a3`（提交 `0d160c05`）已 Ready。真实生成流程验证：MiniMax 搜索返回 10 条资料，图片接口成功生成 1024×576 图片，7 次语音请求成功返回音频；抽查音频为 32kHz 单声道 MP3、26.424 秒，并验证课堂播放。客户端元信息不含密钥，视频未启用。自动化相关 309 项测试、类型检查、ESLint 和密钥扫描通过。
 
 ## 推荐顺序
 

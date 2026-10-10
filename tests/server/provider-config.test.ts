@@ -77,6 +77,7 @@ function clearProviderEnv() {
   delete process.env.BEDROCK_REGION;
   delete process.env.AWS_BEARER_TOKEN_BEDROCK;
   delete process.env.TTS_QWEN_VOICE_CLONE_MODEL;
+  delete process.env.MINIMAX_TOKEN_PLAN;
 }
 
 vi.mock('fs', async (importOriginal) => {
@@ -107,6 +108,40 @@ describe('provider-config', () => {
   });
 
   describe('resolveApiKey', () => {
+    it('shares an opted-in Token Plan only with enabled supported capabilities', async () => {
+      vi.stubEnv('MINIMAX_TOKEN_PLAN', 'true');
+      vi.stubEnv('MINIMAX_API_KEY', 'server-test-key');
+      const config = await import('@/lib/server/provider-config');
+      expect(config.resolveTTSApiKey('minimax-tts', 'visitor-key')).toBe('server-test-key');
+      expect(config.resolveTTSModel('minimax-tts')).toBe('speech-2.8-turbo');
+      expect(config.resolveImageApiKey('minimax-image', 'visitor-key')).toBe('server-test-key');
+      expect(config.resolveWebSearchApiKey('minimax', 'visitor-key')).toBe('server-test-key');
+      expect(config.getServerVideoProviders()).toEqual({});
+      expect(JSON.stringify(config.getServerTTSProviders())).not.toContain('server-test-key');
+      expect(JSON.stringify(config.getServerImageProviders())).not.toContain('server-test-key');
+      expect(JSON.stringify(config.getServerWebSearchProviders())).not.toContain('server-test-key');
+    });
+
+    it('preserves explicit capability credentials, region and force-disable choices', async () => {
+      vi.stubEnv('MINIMAX_TOKEN_PLAN', 'true');
+      vi.stubEnv('MINIMAX_API_KEY', 'server-test-key');
+      vi.stubEnv('MINIMAX_BASE_URL', 'https://api.minimax.io/anthropic/v1');
+      vi.stubEnv('TTS_MINIMAX_API_KEY', 'separate-tts-key');
+      vi.stubEnv('IMAGE_MINIMAX_ENABLED', 'false');
+      const config = await import('@/lib/server/provider-config');
+      expect(config.resolveTTSApiKey('minimax-tts')).toBe('separate-tts-key');
+      expect(config.resolveWebSearchBaseUrl('minimax')).toBe('https://api.minimax.io');
+      expect(config.getServerImageProviders()['minimax-image']).toEqual({ disabled: true });
+      expect(config.isServerConfiguredProvider('image', 'minimax-image')).toBe(false);
+    });
+
+    it('does not infer multimodal entitlement from a plain MiniMax LLM key', async () => {
+      vi.stubEnv('MINIMAX_API_KEY', 'server-test-key');
+      const config = await import('@/lib/server/provider-config');
+      expect(config.getServerTTSProviders()).toEqual({});
+      expect(config.getServerWebSearchProviders()).toEqual({});
+      expect(config.isServerConfiguredProvider('image', 'minimax-image')).toBe(false);
+    });
     it('trial rejects unmanaged credentials and URLs across modalities', async () => {
       vi.stubEnv('TRIAL_MODE', 'true');
       vi.stubEnv('MINIMAX_API_KEY', 'server-test-key');

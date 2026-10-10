@@ -384,6 +384,33 @@ describe('fetchServerProviders — provider availability sync', () => {
 
   // ---- Server model list filtering ----
 
+  it('trial adopts new speech, image and search capabilities in an existing browser', async () => {
+    const store = await getStore();
+    store.setState({
+      autoConfigApplied: true,
+      ttsEnabled: false,
+      imageGenerationEnabled: false,
+      webSearchEnabled: false,
+    });
+    mockServerResponse({
+      trial: { enabled: true, defaultModel: 'openai:gpt-4o-mini' },
+      providers: { openai: { models: ['gpt-4o-mini'] } },
+      tts: { 'openai-tts': {} },
+      image: { seedream: {} },
+      webSearch: { bocha: {} },
+    });
+    await store.getState().fetchServerProviders();
+    expect(store.getState()).toMatchObject({
+      ttsEnabled: true,
+      ttsProviderId: 'openai-tts',
+      imageGenerationEnabled: true,
+      imageProviderId: 'seedream',
+      webSearchEnabled: true,
+      webSearchProviderId: 'bocha',
+      videoGenerationEnabled: false,
+    });
+  });
+
   it('trial selects the operator default over a saved visitor selection', async () => {
     const store = await getStore();
     store.setState({ providerId: 'anthropic', modelId: 'claude-sonnet-4-6' });

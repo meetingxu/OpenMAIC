@@ -514,7 +514,7 @@ function buildConfig(yamlData: YamlData): ServerConfig {
     yamlData.providers,
   );
 
-  return {
+  const config: ServerConfig = {
     providers,
     tts: loadEnvSection(TTS_ENV_MAP, yamlData.tts, {
       keylessProviders: new Set(['voxcpm-tts', 'lemonade-tts']),
@@ -536,6 +536,28 @@ function buildConfig(yamlData: YamlData): ServerConfig {
     }),
     disabled: collectDisabledProviders(yamlData),
   };
+
+  // Opt-in server-side Token Plan sharing. Do not copy keys into client state,
+  // override explicit capability credentials, or enable video/voice cloning.
+  const minimax = providers.minimax;
+  if (process.env.MINIMAX_TOKEN_PLAN === 'true' && minimax?.apiKey) {
+    const international = minimax.baseUrl?.startsWith('https://api.minimax.io/');
+    const baseUrl = international ? 'https://api.minimax.io' : 'https://api.minimaxi.com';
+    const capabilities = [
+      ['tts', 'minimax-tts', 'TTS_MINIMAX', ['speech-2.8-turbo']],
+      ['image', 'minimax-image', 'IMAGE_MINIMAX', ['image-01']],
+      ['webSearch', 'minimax', 'WEB_SEARCH_MINIMAX', undefined],
+    ] as const;
+    for (const [section, id, prefix, defaultModels] of capabilities) {
+      if (config[section][id] || config.disabled[section].has(id)) continue;
+      config[section][id] = {
+        apiKey: minimax.apiKey,
+        baseUrl: process.env[`${prefix}_BASE_URL`] || baseUrl,
+        models: splitModels(process.env[`${prefix}_MODELS`]) || defaultModels?.slice(),
+      };
+    }
+  }
+  return config;
 }
 
 function logConfig(config: ServerConfig, label: string): void {

@@ -2109,7 +2109,9 @@ export const useSettingsStore = create<SettingsState>()(
               let autoVideoEnabled: boolean | undefined;
               let autoTtsEnabled: boolean | undefined;
 
-              if (!state.autoConfigApplied) {
+              // Trial visitors cannot configure providers themselves. Reconcile
+              // newly enabled server capabilities even in an existing browser.
+              if (!state.autoConfigApplied || data.trial?.enabled) {
                 // PDF: unpdf → mineru-cloud or mineru if server has it
                 if (state.pdfProviderId === 'unpdf') {
                   if (newPDFConfig['mineru-cloud']?.isServerConfigured) {
@@ -2274,6 +2276,11 @@ export const useSettingsStore = create<SettingsState>()(
                   videoGenerationEnabled: autoVideoEnabled,
                 }),
                 ...(autoTtsEnabled !== undefined && { ttsEnabled: autoTtsEnabled }),
+                ...(data.trial?.enabled && {
+                  webSearchEnabled: Object.values(data.webSearch || {}).some(
+                    (info) => !info.disabled,
+                  ),
+                }),
               };
             });
           } catch (e) {

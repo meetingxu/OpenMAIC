@@ -1154,6 +1154,15 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
         outputWindow: 8192,
         capabilities: { streaming: true, tools: true, vision: false },
       },
+      {
+        id: 'MiniMax-M2.7-highspeed',
+        name: 'MiniMax M2.7 Highspeed',
+        contextWindow: 204800,
+        // Application budget includes MiniMax's mandatory thinking tokens.
+        // Unknown Anthropic-compatible models otherwise get a small SDK default.
+        outputWindow: 32768,
+        capabilities: { streaming: true, tools: true, vision: false },
+      },
     ],
   },
 

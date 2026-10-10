@@ -161,6 +161,11 @@ export async function POST(req: NextRequest) {
           undefined,
           thinkingConfig,
         );
+        log.info('Model output diagnostics', {
+          finishReason: result.finishReason,
+          textLength: result.text.length,
+          maxOutputTokens: modelInfo?.outputWindow,
+        });
         return result.text;
       }
       const result = await callLLM(
@@ -175,6 +180,11 @@ export async function POST(req: NextRequest) {
         undefined,
         thinkingConfig,
       );
+      log.info('Model output diagnostics', {
+        finishReason: result.finishReason,
+        textLength: result.text.length,
+        maxOutputTokens: modelInfo?.outputWindow,
+      });
       return result.text;
     };
 

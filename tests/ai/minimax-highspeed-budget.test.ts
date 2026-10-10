@@ -1,0 +1,13 @@
+import { expect, it } from 'vitest';
+import { getModel } from '@/lib/ai/providers';
+
+it('resolves the trial MiniMax highspeed model with enough budget for thinking and HTML', () => {
+  const { model, modelInfo } = getModel({
+    providerId: 'minimax',
+    modelId: 'MiniMax-M2.7-highspeed',
+    apiKey: 'test-only',
+  });
+  expect(modelInfo?.outputWindow).toBe(32768);
+  expect(modelInfo?.capabilities?.vision).toBe(false);
+  expect((model as { modelId: string }).modelId).toBe('MiniMax-M2.7-highspeed');
+});

@@ -33,6 +33,7 @@ import {
   type VisionPromptImage,
 } from '@/lib/persistence/resolve-vision-images';
 import { generatePBLV2Project } from '@/lib/pbl/v2/agents/planner';
+import { normalizeSceneOutline } from '@/lib/server/normalize-scene-outline';
 
 const log = createLogger('Scene Content API');
 
@@ -102,7 +103,10 @@ export async function POST(req: NextRequest) {
       return apiError('MISSING_REQUIRED_FIELD', 400, 'stageId is required');
     }
 
-    const outline: SceneOutline = { ...rawOutline };
+    const outline = normalizeSceneOutline({ ...rawOutline });
+    if (!['slide', 'quiz', 'interactive', 'pbl'].includes(outline.type)) {
+      return apiError('INVALID_REQUEST', 400, 'Unsupported scene type');
+    }
 
     // ── Model resolution from request headers/body ──
     // Route per scene-content type (e.g. `scene-content:quiz`); getStageModel
@@ -178,6 +182,7 @@ export async function POST(req: NextRequest) {
     const vocationalActive = resolveVocationalActive(requirements);
     const effectiveOutline = applyOutlineFallbacks(outline, !!languageModel, {
       allowProceduralSkill: vocationalActive,
+      logger: log,
     });
 
     // ── Filter images assigned to this outline ──
@@ -321,7 +326,19 @@ export async function POST(req: NextRequest) {
 
     const userLocale = req.headers?.get('x-user-locale') ?? '';
 
+    let failureReason: string | undefined;
     const content = await generateSceneContent(effectiveOutline, aiCall, {
+      // Never log raw model output; keep structural diagnostics for failed widgets.
+      logger: {
+        ...log,
+        error: (message, ...args) => {
+          if (String(message).includes('Response preview:')) return;
+          log.error(message, ...args);
+        },
+      },
+      onFailure: (failure) => {
+        failureReason = failure.code;
+      },
       assignedImages,
       imageMapping: visionImageMapping,
       visionEnabled: hasVision,
@@ -346,7 +363,13 @@ export async function POST(req: NextRequest) {
       return apiError(
         'GENERATION_FAILED',
         500,
-        `Failed to generate content: ${effectiveOutline.title}`,
+        failureReason === 'invalid-model-output'
+          ? `模型返回的章节内容格式不正确或互动脚本有语法错误，请重试：${effectiveOutline.title}`
+          : failureReason === 'prompt-unavailable'
+            ? `章节生成模板不可用：${effectiveOutline.title}`
+            : `Failed to generate content: ${effectiveOutline.title}`,
+        undefined,
+        failureReason,
       );
     }
 

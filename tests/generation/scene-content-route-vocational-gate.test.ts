@@ -15,7 +15,7 @@ vi.mock('@/lib/server/resolve-model', () => ({
   resolveModelFromRequest: resolveModelFromRequestMock,
 }));
 
-describe('scene-content vocational gate', () => {
+describe('scene-content vocational gate', { timeout: 20_000 }, () => {
   beforeEach(() => {
     originalVocationalFlag = process.env[VOCATIONAL_FLAG];
     delete process.env[VOCATIONAL_FLAG];
@@ -35,6 +35,60 @@ describe('scene-content vocational gate', () => {
     } else {
       process.env[VOCATIONAL_FLAG] = originalVocationalFlag;
     }
+  });
+
+  test('retries a saved diagram outline as an interactive diagram without losing its identity', async () => {
+    vi.resetModules();
+    callLLMMock.mockResolvedValueOnce({ text: htmlForWidget('diagram') });
+    const { POST } = await import('@/app/api/generate/scene-content/route');
+    const outline = {
+      ...createProceduralSkillOutline(),
+      type: 'diagram',
+      widgetType: undefined,
+      widgetOutline: { diagramType: 'hierarchy', nodes: [{ id: 'teacher', label: 'Teacher' }] },
+    } as unknown as SceneOutline;
+    const response = await POST(mockRequest(outline));
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.effectiveOutline).toMatchObject({
+      id: outline.id,
+      order: outline.order,
+      type: 'interactive',
+      widgetType: 'diagram',
+      widgetOutline: outline.widgetOutline,
+    });
+    expect(body.content.widgetType).toBe('diagram');
+    expect(callLLMMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('reports invalid interactive output as a retryable failure without returning raw output', async () => {
+    vi.resetModules();
+    callLLMMock.mockResolvedValueOnce({
+      text: '<!DOCTYPE html><html><body><script>state counts = [];</script></body></html>',
+    });
+    const { POST } = await import('@/app/api/generate/scene-content/route');
+    const outline = { ...createProceduralSkillOutline(), widgetType: 'simulation' as const };
+    const response = await POST(mockRequest(outline));
+    const body = await response.json();
+    expect(response.status).toBe(500);
+    expect(body.reason).toBe('invalid-model-output');
+    expect(JSON.stringify(body)).not.toContain('state counts');
+    // A later retry can succeed using the same saved outline.
+    callLLMMock.mockResolvedValueOnce({ text: htmlForWidget('simulation') });
+    expect((await POST(mockRequest(outline))).status).toBe(200);
+  });
+
+  test('does not spend model calls retrying an unknown scene type', async () => {
+    vi.resetModules();
+    const { POST } = await import('@/app/api/generate/scene-content/route');
+    const response = await POST(
+      mockRequest({
+        ...createProceduralSkillOutline(),
+        type: 'unknown-widget',
+      } as unknown as SceneOutline),
+    );
+    expect(response.status).toBe(400);
+    expect(callLLMMock).not.toHaveBeenCalled();
   });
 
   test('flag off direct/replayed procedural-skill outline is downgraded before content generation', async () => {

@@ -40,6 +40,7 @@ import { resolveModelFromRequest } from '@/lib/server/resolve-model';
 import { sortDocumentImagesForVision } from '@/lib/document/bundle';
 import { resolveVisionImagesForPrompt } from '@/lib/persistence/resolve-vision-images';
 import { resolveVocationalActive } from '@/lib/config/feature-flags';
+import { normalizeSceneOutline } from '@/lib/server/normalize-scene-outline';
 const log = createLogger('Outlines Stream');
 
 export const maxDuration = 300;
@@ -580,10 +581,10 @@ export async function POST(req: NextRequest) {
                 scanFrom = nextScanFrom;
                 for (const outline of newOutlines) {
                   // Ensure ID and order
-                  const enrichedBase = {
+                  const enrichedBase = normalizeSceneOutline({
                     ...outline,
                     order: parsedOutlines.length + 1,
-                  };
+                  });
                   const normalized = taskEngineMode
                     ? normalizeTaskEngineOutline(enrichedBase, requirements.requirement)
                     : sanitizeNonTaskEngineOutline(enrichedBase);

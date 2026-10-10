@@ -4,7 +4,9 @@
 目标域名 `qizhi.ailantan.com`；当前 `ailantan.com` 权威DNS为DNSPod。
 已将 `qizhi.ailantan.com` 接到 `openmaic-preview` 的 Preview 环境、`codex/openmaic-product` 分支。DNSPod 新增 `qizhi` CNAME，目标为项目实际返回的 `9621579263bf1ff8.vercel-dns-017.com.`，TTL 600；Vercel 已显示 Valid Configuration，HTTPS 验证成功，登录中的浏览器能打开现有课堂首页。
 
-现有部署仍保留 Vercel Authentication；本地试用安全改造尚未重新部署，首页仍显示配置模型入口，不能将现有部署视为已完成安全试用版本。Cloudflare 尚未接入。当前机器检测到虚拟 DNS/TUN 地址，现有 HTTP 测量只能记录当前网络路径，不能作为大陆无代理直连结论。测速证据保存在被 Git 忽略的 `outputs/vercel/`。
+现有部署仍保留 Vercel Authentication。2026-10-10 已将试用改造同步到产品分支，Preview 部署 `3ZvPgG2emQAhnApZxbsVr4hAqMi9`（提交 `2e5a48e5`）已 Ready 并绑定本域名。Preview 已配置 `TRIAL_MODE=true`、`DEFAULT_MODEL=minimax:MiniMax-M2.7-highspeed`、对应服务端模型列表/地址、关闭场景并行；`MINIMAX_API_KEY` 和 `ACCESS_CODE` 为 Secret，由运营者本地填写。
+
+在线验证：首页自动显示默认 MiniMax 模型，访客设置页只有常规设置，已成功生成并打开简单文字课堂；未配置或验证图片、视频、TTS 等服务。Cloudflare 尚未接入。当前机器检测到虚拟 DNS/TUN 地址，现有 HTTP 测量只能记录当前网络路径，不能作为大陆无代理直连结论。验证证据保存在被 Git 忽略的 `outputs/vercel/`。
 
 ## 推荐顺序
 

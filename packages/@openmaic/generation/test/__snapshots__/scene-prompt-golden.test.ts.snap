@@ -416,7 +416,15 @@ function publishState(observation) {
 }
 \`\`\`
 
-If the activity has an apply/run step, capture the inputs a run actually used when it starts, and write them to \`rendered\` only after that run has successfully become the displayed result. A cancelled or superseded run must not update \`rendered\`, and a parameter edit alone must never advance it.",
+If the activity has an apply/run step, capture the inputs a run actually used when it starts, and write them to \`rendered\` only after that run has successfully become the displayed result. A cancelled or superseded run must not update \`rendered\`, and a parameter edit alone must never advance it.
+
+## Interaction reliability (mandatory)
+Run in a sandboxed iframe with an opaque origin: do not depend on localStorage, sessionStorage, parent DOM access, fetch, or remote imports for core interactions. Use inline vanilla JavaScript and in-memory state; optional visual libraries must have a usable fallback.
+Initialize only after the DOM exists (script at the end of body or DOMContentLoaded). Every visible enabled button, selectable node, and slider must have a working event handler and visible feedback. Use button type="button"; do not use empty href links as controls.
+Define every called helper, including optional sound helpers such as playTone; do not assume the host provides them. Prefer addEventListener inside the initialization scope. If using inline onclick attributes, explicitly expose their functions on window; functions nested in DOMContentLoaded are not globals. Declare state before using it, and guard the final level before reading its array entry. Keep one requestAnimationFrame loop, cancel it on reset and completion, and never start self-scheduling loops from another frame callback.
+Use a single initialization path and stable IDs. Avoid duplicate global const/let declarations. Keep JSON in widget-config valid JSON (no comments or trailing commas). Bind handlers to dynamically created nodes after creation or use delegation. Never let decorative overlays capture pointer events.
+For diagrams, clicking every visible node must display its own details in a readable panel; support touch and keyboard activation. Next/previous/reset controls must update the visible state and button enabled state consistently.
+Before returning, mentally walk through initial load, every enabled control, reset, and repeated clicks. All advertised interactions must be implemented. Return one complete HTML document only.",
     "user": "Create a simulation widget for: Energy transfer
 
 ## Concept Overview

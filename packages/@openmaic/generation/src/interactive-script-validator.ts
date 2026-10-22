@@ -1,4 +1,5 @@
 import { Script } from 'node:vm';
+import { findInteractiveReferenceFailure } from './interactive-reference-validator.js';
 import { parse, type DefaultTreeAdapterTypes } from 'parse5';
 
 export interface InteractiveScriptSyntaxFailure {
@@ -156,7 +157,7 @@ export function findInteractiveScriptSyntaxFailure(
 }
 
 export interface InteractiveContentFailure {
-  readonly kind: 'script-syntax' | 'event-handler' | 'widget-config';
+  readonly kind: 'script-syntax' | 'script-reference' | 'event-handler' | 'widget-config';
   readonly message: string;
 }
 
@@ -196,5 +197,19 @@ export function findInteractiveContentFailure(html: string): InteractiveContentF
     }
   }
   visit(parse(html));
-  return failure;
+  if (failure) return failure;
+  const scripts = extractScriptElements(html);
+  const reference = findInteractiveReferenceFailure(
+    html,
+    scripts.filter(isExecutableClassicInline).map((s) => s.source),
+    scripts
+      .filter(
+        (s) =>
+          s.executable &&
+          s.attributes.has('src') &&
+          CLASSIC_JAVASCRIPT_TYPES.has(classicScriptType(s.attributes)),
+      )
+      .map((s) => s.attributes.get('src')!),
+  );
+  return reference ? { kind: 'script-reference', message: reference } : null;
 }

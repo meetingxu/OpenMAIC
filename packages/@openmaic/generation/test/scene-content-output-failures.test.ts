@@ -52,10 +52,12 @@ describe('scene content model-output failures', () => {
 
     expect(content).toBeNull();
     expect(failures).toEqual([{ code: 'invalid-model-output' }]);
-    expect(aiCall).toHaveBeenCalledTimes(1);
-    expect(
-      errors.some((message) => message.includes('script #2') && message.includes('counts')),
-    ).toBe(true);
+    expect(aiCall).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(aiCall).mock.calls[1]?.[1]).toContain('script #2');
+    expect(vi.mocked(aiCall).mock.calls[1]?.[1]).toContain('counts');
+    expect(errors.some((message) => message.includes('still fails validation after repair'))).toBe(
+      true,
+    );
   });
 
   it.each([

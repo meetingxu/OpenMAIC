@@ -17,6 +17,18 @@ const good =
   '<html><body><button type="button" onclick="this.textContent=\'已选择\'">选择</button></body></html>';
 
 describe('interactive reliability', () => {
+  it('repairs missing helpers using the exact reference diagnostic and rejects persistent failures', async () => {
+    const broken =
+      '<html><body><script>document.addEventListener("click",()=>playTone(420))</script></body></html>';
+    const aiCall = vi.fn().mockResolvedValueOnce(broken).mockResolvedValueOnce(good);
+    expect((await generateWidgetContent(outline, aiCall))?.html).toContain('已选择');
+    expect(aiCall.mock.calls[1]?.[1]).toContain('Undefined JavaScript reference "playTone"');
+    const onFailure = vi.fn();
+    const stillBroken = vi.fn().mockResolvedValue(broken);
+    expect(await generateWidgetContent(outline, stillBroken, undefined, { onFailure })).toBeNull();
+    expect(stillBroken).toHaveBeenCalledTimes(2);
+    expect(onFailure).toHaveBeenCalledWith({ code: 'invalid-model-output' });
+  });
   it('rejects malformed config and event attributes before the page reaches users', () => {
     expect(
       findInteractiveContentFailure(

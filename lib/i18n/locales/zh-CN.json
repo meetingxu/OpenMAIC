@@ -10,7 +10,7 @@
     "close": "关闭"
   },
   "home": {
-    "slogan": "Generative Learning in Multi-Agent Interactive Classroom",
+    "slogan": "让课程内容，变成可讲解、可提问、可练习的学习体验",
     "greetingWithName": "嗨，{{name}}"
   },
   "toolbar": {
@@ -1027,7 +1027,7 @@
     "pdfSizeLimit": "支持最大50MB的PDF文件",
     "courseMaterialSizeLimit": "支持文档、演示、表格、图像、纯文本，最大 50MB（具体支持格式随所选解析器而定）",
     "generateFailed": "生成课堂失败，请重试",
-    "requirementPlaceholder": "输入你想学的任何内容，例如：\n「从零学 Python，30 分钟写出第一个程序」\n「用白板给我讲解傅里叶变换」\n「阿瓦隆桌游怎么玩」",
+    "requirementPlaceholder": "说说课程主题、学习对象和目标，也可以上传课程资料。\n例如：「为初中生讲清浮力，包含浮沉实验与随堂练习」\n「面向初学者，讲清植物生长所需的条件」",
     "requirementRequired": "请输入课程需求",
     "fileTooLarge": "文件过大，请选择小于 50MB 的文件",
     "courseMaterialCountLimit": "最多可上传 5 个课程材料文件",

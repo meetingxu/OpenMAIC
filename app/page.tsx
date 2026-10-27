@@ -29,6 +29,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
+import { useBrand } from '@/lib/brand/brand-context';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { createLogger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
@@ -125,6 +126,7 @@ const initialFormState: FormState = {
 
 function HomePage() {
   const { t } = useI18n();
+  const brand = useBrand();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   // Do not replay the classic hero's entrance after the route handoff already
@@ -811,7 +813,7 @@ function HomePage() {
           style={{ animationDuration: '4s' }}
         />
         <div
-          className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
+          className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"
           style={{ animationDuration: '6s' }}
         />
       </div>
@@ -826,8 +828,8 @@ function HomePage() {
         {/* ── Logo ── */}
         <div className="relative" data-pro-morph="lockup">
           <motion.img
-            src="/logo-horizontal.png"
-            alt="OpenMAIC"
+            src={brand.logoSrc}
+            alt={brand.productName}
             initial={heroEnter({ opacity: 0, scale: 0.9 })}
             animate={{ opacity: 1, scale: 1 }}
             transition={{
@@ -836,7 +838,7 @@ function HomePage() {
               stiffness: 200,
               damping: 20,
             }}
-            className="h-12 md:h-16 mb-2 -ml-2 md:-ml-3"
+            className="h-12 md:h-16 w-auto mb-2"
           />
           {workbenchEntryEnabled ? (
             <div
@@ -853,7 +855,7 @@ function HomePage() {
           initial={heroEnter({ opacity: 0 })}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25 }}
-          className="text-sm text-muted-foreground/60 mb-8"
+          className="text-sm text-muted-foreground mb-8 text-center text-balance leading-relaxed px-4"
         >
           {t('home.slogan')}
         </motion.p>
@@ -1336,9 +1338,9 @@ function HomePage() {
       />
 
       {/* Footer — flows with content, at the very end */}
-      <div className="mt-auto pt-12 pb-4 text-center text-xs text-muted-foreground/40">
-        OpenMAIC Open Source Project
-      </div>
+      <footer className="relative z-10 mt-auto pt-12 pb-4 text-center text-xs text-muted-foreground leading-6">
+        <p>蓝碳数字科技（重庆）有限公司</p>
+      </footer>
     </div>
   );
 }

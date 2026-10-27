@@ -23,12 +23,12 @@ export interface BrandConfig {
   themeColor: string;
 }
 
-/** The default brand: the product itself, with no vendor overrides. */
+/** 启知课堂的统一品牌入口，首页、工作台和访问页共用，避免出现两套名称。 */
 export const DEFAULT_BRAND: BrandConfig = {
-  productName: 'OpenMAIC',
-  shortName: 'OpenMAIC',
-  logoSrc: '/logo-horizontal.png',
+  productName: '启知课堂',
+  shortName: '启知课堂',
+  logoSrc: '/brand/qizhi-horizontal.svg',
   logoHasWordmark: true,
-  markSrc: '/openmaic-mark.png',
-  themeColor: '#722ed1',
+  markSrc: '/brand/qizhi-mark.svg',
+  themeColor: '#1478b8',
 };
